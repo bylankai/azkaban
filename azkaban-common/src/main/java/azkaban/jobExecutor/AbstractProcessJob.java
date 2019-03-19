@@ -29,7 +29,8 @@ import java.util.Map;
 import org.apache.commons.fileupload.util.Streams;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
-
+import java.util.Properties;
+import java.util.Enumeration;
 /**
  * A revised process-based job
  */
@@ -44,6 +45,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
   private static final String SENSITIVE_JOB_PROP_NAME_SUFFIX = "_X";
   private static final String SENSITIVE_JOB_PROP_VALUE_PLACEHOLDER = "[MASKED]";
   private static final String JOB_DUMP_PROPERTIES_IN_LOG = "job.dump.properties";
+  private static final String RUNTIME_PROPERTIES = "runtime.properties";
   protected final String _jobPath;
   private final Logger log;
   protected volatile Props jobProps;
@@ -182,6 +184,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
           outputProps.put(entry.getKey(), entry.getValue().toString());
         }
       }
+      addRuntimeProps(outputProps);
       return outputProps;
     } catch (final FileNotFoundException e) {
       this.log.info(String.format("File[%s] wasn't found, returning empty props.",
@@ -197,6 +200,27 @@ public abstract class AbstractProcessJob extends AbstractJob {
     }
   }
 
+  private void addRuntimeProps(Props outputProps) {
+    // Add runtime properties into outputProps
+    String runtimePropertyFilePath= this._cwd+"/"+RUNTIME_PROPERTIES;
+    try(InputStream reader= new FileInputStream(runtimePropertyFilePath)){
+      Properties prop = new Properties();
+      prop.load(reader);
+      for (Enumeration<?> e = prop.propertyNames(); e.hasMoreElements(); ) {
+          String name = (String)e.nextElement();
+          String value = prop.getProperty(name);
+          outputProps.put(name,value);
+      }
+    } catch (final FileNotFoundException e) {
+      this.log.info(String.format("Runtime Property File[%s] wasn't found.",
+          runtimePropertyFilePath));
+    } catch (final Exception e) {
+      this.log.error(
+          "Exception thrown when trying to load runtime props.",
+          e);
+    }
+  }
+  
   public File createFlattenedPropsFile(final String workingDir) {
     final File directory = new File(workingDir);
     File tempFile = null;
