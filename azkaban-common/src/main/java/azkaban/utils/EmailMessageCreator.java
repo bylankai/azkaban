@@ -32,7 +32,7 @@ public class EmailMessageCreator {
   private final String mailSender;
   private final String tls;
   private final boolean usesAuth;
-
+  private final String azkabanHost;
   @Inject
   public EmailMessageCreator(final Props props) {
     this.mailHost = props.getString("mail.host", "localhost");
@@ -42,6 +42,7 @@ public class EmailMessageCreator {
     this.mailSender = props.getString("mail.sender", "");
     this.tls = props.getString("mail.tls", "false");
     this.usesAuth = props.getBoolean("mail.useAuth", true);
+    this.azkabanHost = props.getString("mail.azkabanHost", "localhost");
   }
 
   public EmailMessage createMessage() {
