@@ -51,9 +51,11 @@ import java.util.regex.Pattern;
 public class KafkaDepInstanceCollection {
 
   private final Map<String, Map<String, List<KafkaDependencyInstanceContext>>> topicEventMap;
+  private final Set<String> topicSetNoRemove;
 
   public KafkaDepInstanceCollection() {
     this.topicEventMap = new HashMap<>();
+    this.topicSetNoRemove = new HashSet<String>();
   }
 
   public synchronized void add(final KafkaDependencyInstanceContext dep) {
@@ -72,6 +74,7 @@ public class KafkaDepInstanceCollection {
     depList.add(dep);
     eventMap.put(dep.getRegexMatch(), depList);
     this.topicEventMap.put(topic, eventMap);
+    this.topicSetNoRemove.add(topic);
   }
 
   public boolean hasTopic(final String topic) {
@@ -83,7 +86,10 @@ public class KafkaDepInstanceCollection {
    * @return List of String of topics
    */
   public synchronized List<String> getTopicList() {
-    final List<String> res = new ArrayList<>(this.topicEventMap.keySet());
+    //final List<String> res = new ArrayList<>(this.topicEventMap.keySet());
+    //return res;
+    final List<String> res = new ArrayList<String>();
+    res.addAll(this.topicSetNoRemove);
     return res;
   }
 
