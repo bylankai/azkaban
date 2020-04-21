@@ -35,8 +35,6 @@ import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import trigger.kafka.Constants.DependencyPluginConfigKey;
-
-
 /**
  * KafkaEventMonitor implements logic for kafka consumer and maintains the KafkaDepInstanceCollection for dependencies.
  */
@@ -48,7 +46,7 @@ public class KafkaEventMonitor implements Runnable {
   private final KafkaDepInstanceCollection depInstances;
   private final ConcurrentLinkedQueue<String> subscribedTopics = new ConcurrentLinkedQueue<>();
   private Consumer<String, String> consumer;
-
+  private final static int KAFKA_POLLING_TIMEOUT = 10000;
   public KafkaEventMonitor(final DependencyPluginConfig pluginConfig) {
     this.initKafkaClient(pluginConfig);
     this.consumer.subscribe(Arrays.asList("AzEvent_Init_Topic"));
@@ -99,12 +97,17 @@ public class KafkaEventMonitor implements Runnable {
         if (!this.subscribedTopics.isEmpty()) {
           this.consumerSubscriptionRebalance();
         }
-        final ConsumerRecords<String, String> records = this.consumer.poll(10000);
+        final ConsumerRecords<String, String> records = this.consumer.poll(KAFKA_POLLING_TIMEOUT);
+        if (!records.isEmpty())
+           log.info("Number of records : " + records.count());
         final Record recordToProcess = null;
+        
         for (final ConsumerRecord<String, String> record : records) {
           try {
             final String payload = record.value();
+            log.info("Topic " + record.topic() + " : offset " + record.offset() + " , message " + payload);
             final Set<String> matchedList = this.depInstances.regexInTopic(record.topic(), payload);
+            log.info("matchedList: " + matchedList.toString());
             if (!matchedList.isEmpty()) {
               this.triggerDependencies(matchedList, record);
             }
